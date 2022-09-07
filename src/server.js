@@ -63,7 +63,6 @@ routerProducts.put('/:id', authMiddleware ,async (req, res, next) => {
     wasUpdated
         ? res.status(200).json({"success" : "product updated"})
         : res.status(404).json({"error": "product not found"})
-        
 })
 
 
@@ -85,7 +84,7 @@ routerCart.post('/', async(req, res) => {
     const {body} = req;
     
     body.timestamp = Date.now();
-    
+    body.products = [];
     const newCartId = await carrito.save(body);
     
     newCartId
@@ -109,7 +108,7 @@ routerCart.post('/:id/productos', async(req,res) => {
     const {id} = req.params;
     const { body } = req;
     
-    const product = await contenedor.getById(body['id']);    
+    const product = await contenedor.getById(body['id']);
     
     if (product) {
         const cartExist = await carrito.addToArrayById(id, {"products": product});
@@ -145,7 +144,7 @@ routerCart.delete('/:id/productos/:id_prod', async(req, res) => {
     }
 })
 
-const PORT = 8020;
+const PORT = 8080;
 const server = app.listen(PORT, () => {
 console.log(` >>>>> 🚀 Server started at http://localhost:${PORT}`)
 })

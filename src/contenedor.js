@@ -6,17 +6,16 @@ class Contenedor {
     this._keys = [...keys, "id"];
     this._readFileOrCreateNewOne();
   }
-  
+
   _validateKeysExist(newData) {
-    
     const objectKeys = Object.keys(newData);
     let exists = true;
-    
+
     objectKeys.forEach((key) => {
-      if(!this._keys.includes(key)) {
+      if (!this._keys.includes(key)) {
         exists = false;
       }
-    })
+    });
     return exists;
   }
 
@@ -36,7 +35,9 @@ class Contenedor {
     fs.writeFile(this._filename, "[]", (error) => {
       error
         ? console.log(error)
-        : console.log(`File ${this._filename} was created since it didn't exist in the system`);
+        : console.log(
+            `File ${this._filename} was created since it didn't exist in the system`
+          );
     });
   }
 
@@ -80,7 +81,38 @@ class Contenedor {
   }
 
   async updateById(id, newData) {
-    if(this._validateKeysExist(newData)){
+    if (this._validateKeysExist(newData)) {
+      try {
+        id = Number(id);
+        const data = await this.getData();
+        const parsedData = JSON.parse(data);
+        const objectIdToBeUpdated = parsedData.find(
+          (producto) => producto.id === id
+        );
+        if (objectIdToBeUpdated) {
+          Object.keys(newData).forEach((key) => {
+            objectIdToBeUpdated[key] = newData[key];
+          });
+
+          await fs.promises.writeFile(
+            this._filename,
+            JSON.stringify(parsedData)
+          );
+          return true;
+        } else {
+          console.log(`ID ${id} does not exist in the file`);
+          return null;
+        }
+      } catch (error) {
+        `Error Code: ${error.code} | There was an error when trying to update an element by its ID (${id})`;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  async addToArrayById(id, objectToAdd) {
+    if (this._validateKeysExist(objectToAdd)) {
       try {
         id = Number(id);
         const data = await this.getData();
@@ -90,59 +122,22 @@ class Contenedor {
         );
         if (objectIdToBeUpdated) {
           const index = parsedData.indexOf(objectIdToBeUpdated);
-          
-          objectKeys.forEach( (key) => {
-            parsedData[index][key] = newData[key];
-          })
-          
-          
-          await fs.promises.writeFile(this._filename, JSON.stringify(parsedData));
+          const valorActual = parsedData[index];
+          const currentProducts = valorActual["products"];
+          currentProducts.push(objectToAdd.products);
+
+          await fs.promises.writeFile(
+            this._filename,
+            JSON.stringify(parsedData)
+          );
           return true;
         } else {
           console.log(`ID ${id} does not exist in the file`);
-          return null;
+          return false;
         }
-  
       } catch (error) {
-        `Error Code: ${error.code} | There was an error when trying to update an element by its ID (${id})`
+        `Error Code: ${error.code} | There was an error when trying to update an element by its ID (${id})`;
       }
-    } else {
-      return false;
-    }
-  
-    
-  }
-  
-  async addToArrayById(id, objectToAdd) {
-    if(this._validateKeysExist(objectToAdd)) {
-    try {
-      id = Number(id);
-      const data = await this.getData();
-      const parsedData = JSON.parse(data);
-      const objectIdToBeUpdated = parsedData.find(
-        (producto) => producto.id === id
-      );
-      if (objectIdToBeUpdated) {
-        const index = parsedData.indexOf(objectIdToBeUpdated);
-        
-        const valorActual = parsedData[index][objectKey];
-        
-        const newArray = [...valorActual, objectToAdd[objectKey]];
-        
-        
-        
-        parsedData[index][objectKey] = newArray;
-        
-        await fs.promises.writeFile(this._filename, JSON.stringify(parsedData));
-        return true;
-      } else {
-        console.log(`ID ${id} does not exist in the file`);
-        return false;
-      }
-
-    } catch (error) {
-      `Error Code: ${error.code} | There was an error when trying to update an element by its ID (${id})`
-    }
     } else {
       return false;
     }
@@ -153,28 +148,29 @@ class Contenedor {
       id = Number(id);
       const data = await this.getData();
       const parsedData = JSON.parse(data);
-      
+
       const objectIdToBeUpdated = parsedData.find(
         (producto) => producto.id === id
       );
-      
+
       if (objectIdToBeUpdated) {
-        const index = parsedData.indexOf(objectIdToBeUpdated);
-        
+        const index = parsedData.indexOf(objectIdToBeUpdated); //BUSCA EL INDEX DEL OBJETO EN LA DATA
+
         const valorActual = parsedData[index][keyName];
+
         let indexToBeRemoved = -1;
         valorActual.forEach((element, indexE) => {
-          if(element.id == objectToRemoveId) {
-            indexToBeRemoved = indexE
+          if (element.id == objectToRemoveId) {
+            indexToBeRemoved = indexE;
           }
-        })
+        });
         const newArray = [...valorActual];
-        
-        if (indexToBeRemoved>-1) {
-          console.log(indexToBeRemoved)
-          newArray.splice(indexToBeRemoved,1)
+
+        if (indexToBeRemoved > -1) {
+          console.log(indexToBeRemoved);
+          newArray.splice(indexToBeRemoved, 1);
         }
-    
+
         parsedData[index][keyName] = newArray;
         await fs.promises.writeFile(this._filename, JSON.stringify(parsedData));
         return true;
@@ -182,22 +178,20 @@ class Contenedor {
         console.log(`ID ${id} does not exist in the file`);
         return false;
       }
-
     } catch (error) {
-      `Error Code: ${error.code} | There was an error when trying to update an element by its ID (${id})`
+      `Error Code: ${error.code} | There was an error when trying to update an element by its ID (${id})`;
     }
-  
   }
 
-  async save(object) {    
-    if(this._validateKeysExist(object)) {
+  async save(object) {
+    if (this._validateKeysExist(object)) {
       try {
         const allData = await this.getData();
         const parsedData = JSON.parse(allData);
-  
+
         object.id = parsedData.length + 1;
         parsedData.push(object);
-  
+
         await fs.promises.writeFile(this._filename, JSON.stringify(parsedData));
         return object.id;
       } catch (error) {
@@ -208,7 +202,6 @@ class Contenedor {
     } else {
       return false;
     }
-    
   }
 
   async deleteAll() {
